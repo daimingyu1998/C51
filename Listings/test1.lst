@@ -1,4 +1,4 @@
-C51 COMPILER V9.57.0.0   TEST1                                                             09/26/2020 06:58:59 PAGE 1   
+C51 COMPILER V9.57.0.0   TEST1                                                             09/26/2020 08:05:49 PAGE 1   
 
 
 C51 COMPILER V9.57.0.0, COMPILATION OF MODULE TEST1
@@ -11,49 +11,75 @@ line level    source
    1          #include  <reg52.h>
    2          #include  <intrins.h>
    3          
-   4          sbit speed_button = P1^0;
-   5          sbit state_button = P1^1;
-   6          sbit led = P2^0;
-   7          enum SPEED{ low = 0, mid = 1, high = 2} speed = low;
-   8          enum STATE{ stop = 0, run =1} state = stop;
-   9          void setInit();
-  10          void setTimer();
+   4          sbit motor_in1 = P1^0;
+   5          sbit motor_in2 = P1^1;
+   6          enum SPEED{ low = 0, mid = 1, high = 2} speed = low;
+   7          enum STATE{ stop = 0, run =1} state = stop;
+   8          void setInit();
+   9          void setTimer();
+  10          void runOnce(enum SPEED speed);
   11          void main(){
   12   1        setInit();
-  13   1        setTimer();
-  14   1        while(1);
-  15   1      }
-  16          void controlSpeed() interrupt 0{
-  17   1        if (state == run){
-  18   2          speed = (speed+1)%3;
-  19   2          
-  20   2        } 
-  21   1      }
-  22          void controlState() interrupt 2{
-  23   1        state = 1 - state;
-  24   1        led = 0;
-  25   1      }
-  26          void timer0() interrupt 1{
-  27   1        
-  28   1      }
-  29          void setInit(){
-  30   1        IT0 = 1;  //外部中断0下降沿触发
-  31   1        IT1 = 1;
-  32   1        EX0 = 1;  //外部中断0允许
-  33   1        EX1 = 1; 
-  34   1        EA = 1;   //总中断允许
-  35   1      }
-  36          void setTimer(){
-  37   1        TMOD = 0x01; //定时器控制方式
-  38   1        TH0 = 156; //定时器初值
-  39   1        TL0 = 156; 
-  40   1        ET0 = 1; //定时器0中断允许
-  41   1      }
-  42          
+  13   1        //setTimer();
+  14   1        while(1){
+  15   2          if (state == run){
+  16   3            runOnce(speed);
+  17   3          }
+  18   2        }
+  19   1      }
+  20          void controlSpeed() interrupt 0{
+  21   1        if (state == run){
+  22   2          speed = (speed+1)%3;
+  23   2        } 
+  24   1      }
+  25          void controlState() interrupt 2{
+  26   1        state = 1 - state;
+  27   1      }
+  28          void timer0() interrupt 1{
+  29   1        
+  30   1      }
+  31          void setInit(){
+  32   1        IT0 = 1;  //外部中断0下降沿触发
+  33   1        IT1 = 1;
+  34   1        EX0 = 1;  //外部中断0允许
+  35   1        EX1 = 1; 
+  36   1        EA = 1;   //总中断允许
+  37   1      }
+  38          void setTimer(){
+  39   1        TMOD = 0x01; //定时器控制方式
+  40   1        TH0 = 156; //定时器初值
+  41   1        TL0 = 156; 
+  42   1        ET0 = 1; //定时器0中断允许
+  43   1        TR0 = 1; //定时器开启
+  44   1      }
+  45          void runOnce(enum SPEED speed)
+  46          {
+  47   1        int num1 = 0;
+  48   1        int num2 = 100;
+  49   1        switch(speed){
+  50   2          case low:
+  51   2              num1 = 10;break;
+  52   2          case mid:
+  53   2              num1 = 50;break;
+  54   2          case high:
+C51 COMPILER V9.57.0.0   TEST1                                                             09/26/2020 08:05:49 PAGE 2   
+
+  55   2              num1 = 90;break;
+  56   2        }
+  57   1        num2 = 100 - num1;
+  58   1        motor_in1 = 1;
+  59   1        motor_in2 = 0;
+  60   1        while(num1--);
+  61   1        motor_in1 = 0;
+  62   1        motor_in2 = 0;
+  63   1        while(num2--);
+  64   1      }
+  65            
+  66          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    108    ----
+   CODE SIZE        =    182    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

@@ -1,21 +1,25 @@
 #include	<reg52.h>
 #include	<intrins.h>
 
-sbit speed_button = P1^0;
-sbit state_button = P1^1;
+sbit motor_in1 = P1^0;
+sbit motor_in2 = P1^1;
 enum SPEED{ low = 0, mid = 1, high = 2} speed = low;
 enum STATE{ stop = 0, run =1} state = stop;
 void setInit();
 void setTimer();
+void runOnce(enum SPEED speed);
 void main(){
   setInit();
-	setTimer();
-	while(1);
+	//setTimer();
+	while(1){
+		if (state == run){
+			runOnce(speed);
+		}
+	}
 }
 void controlSpeed() interrupt 0{
 	if (state == run){
 		speed = (speed+1)%3;
-		
 	}	
 }
 void controlState() interrupt 2{
@@ -36,5 +40,27 @@ void setTimer(){
 	TH0 = 156; //定时器初值
 	TL0 = 156; 
 	ET0 = 1; //定时器0中断允许
+	TR0 = 1; //定时器开启
 }
+void runOnce(enum SPEED speed)
+{
+	int num1 = 0;
+	int num2 = 100;
+	switch(speed){
+		case low:
+				num1 = 10;break;
+		case mid:
+				num1 = 50;break;
+		case high:
+				num1 = 90;break;
+	}
+	num2 = 100 - num1;
+	motor_in1 = 1;
+	motor_in2 = 0;
+	while(num1--);
+	motor_in1 = 0;
+	motor_in2 = 0;
+	while(num2--);
+}
+	
 
