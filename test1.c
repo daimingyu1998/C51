@@ -11,8 +11,8 @@ sbit timer_button = P3^7;
 int mins = 1;
 int secs = 5;
 int times = 0;
-bit secs_will_set = 0;
-bit mins_will_set = 0;
+int secs_will_set = 0;
+int mins_will_set = 0;
 bit start_timer = 0;
 enum SPEED{ low = 0, mid = 1, high = 2} speed = low;
 enum STATE{ stop = 0, run =1} state = stop;
@@ -49,6 +49,9 @@ void main(){
 				{
 					times = secs*20 + mins*1200;
 					start_timer = 1;
+					SBUF = 0x37;
+					while(!TI);
+					TI = 0;
 				}
 			}
 			if (start_flag == 0){
@@ -71,7 +74,6 @@ void controlSpeed() interrupt 0{
 	unsigned char transferedData;
 	while(i--);
 	if(speed_button != 0){return;}
-	updateDisplay();
 	if (state == run){
 		speed = (speed+1)%3;
 		updateDisplay();
@@ -172,30 +174,31 @@ void serialInit() interrupt 4{
 	receivedData = SBUF;
 	RI = 0;
 	if(mins_will_set == 1){
-		mins = receivedData;
+		mins = receivedData - 48;
 		mins_will_set = 0;
 	}
 	else{
 		if(secs_will_set == 1){
-			secs = receivedData;
+			secs = receivedData - 48;
 			secs_will_set = 0;
 		}
 		else{
 			switch (receivedData){
-				case 0x00: state = stop; break;
-				case 0x01: state = run; break;
-				case 0x02: speed = low; break;
-				case 0x03: speed = mid; break;
-				case 0x04: speed = high; break;
-				case 0x05: mins_will_set = 1;break;
-				case 0x06: secs_will_set = 1;break;
+				case 0x30: state = stop; break;
+				case 0x31: state = run; break;
+				case 0x32: speed = low; break;
+				case 0x33: speed = mid; break;
+				case 0x34: speed = high; break;
+				case 0x35: mins_will_set = 1;break;
+				case 0x36: secs_will_set = 1;break;
+				case 0x37: times = secs*20 + mins*1200;start_timer = 1;break;
 			}
 		}
 	}
-	updateDisplay();
 	SBUF = receivedData;
 	while(!TI);
 	TI = 0;
+	updateDisplay();
 }
 void updateDisplay(){
 	int i,j = 0;
