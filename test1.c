@@ -8,7 +8,7 @@ sbit display_clk = P2^3;
 sbit state_button = P3^3;
 sbit speed_button = P3^2;
 sbit timer_button = P3^7;
-int mins = 0;
+int mins = 1;
 int secs = 5;
 int times = 0;
 bit secs_will_set = 0;
@@ -47,6 +47,7 @@ void main(){
 				while(i--);
 				if (timer_button == 0)
 				{
+					times = secs*20 + mins*1200;
 					start_timer = 1;
 				}
 			}
@@ -172,23 +173,25 @@ void serialInit() interrupt 4{
 	RI = 0;
 	if(mins_will_set == 1){
 		mins = receivedData;
-		mins_will_set == 0;
-	}
-	else if(secs_will_set == 1){
-		secs = receivedData;
-		secs_will_set == 0;
+		mins_will_set = 0;
 	}
 	else{
-		switch (receivedData){
-			case 0x00: state = stop; break;
-			case 0x01: state = run; break;
-			case 0x02: speed = low; break;
-			case 0x03: speed = mid; break;
-			case 0x04: speed = high; break;
-			case 0x05: mins_will_set = 1;
-			case 0x06: secs_will_set = 1;
+		if(secs_will_set == 1){
+			secs = receivedData;
+			secs_will_set = 0;
 		}
-  }
+		else{
+			switch (receivedData){
+				case 0x00: state = stop; break;
+				case 0x01: state = run; break;
+				case 0x02: speed = low; break;
+				case 0x03: speed = mid; break;
+				case 0x04: speed = high; break;
+				case 0x05: mins_will_set = 1;break;
+				case 0x06: secs_will_set = 1;break;
+			}
+		}
+	}
 	updateDisplay();
 	SBUF = receivedData;
 	while(!TI);
