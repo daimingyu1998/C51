@@ -1,4 +1,4 @@
-C51 COMPILER V9.57.0.0   TEST1                                                             09/27/2020 21:33:59 PAGE 1   
+C51 COMPILER V9.57.0.0   TEST1                                                             09/28/2020 12:17:47 PAGE 1   
 
 
 C51 COMPILER V9.57.0.0, COMPILATION OF MODULE TEST1
@@ -13,128 +13,167 @@ line level    source
    3          
    4          sbit motor_in1 = P2^0;
    5          sbit motor_in2 = P2^1;
-   6          sbit led = P2^4;
-   7          enum SPEED{ low = 0, mid = 1, high = 2} speed = low;
-   8          enum STATE{ stop = 0, run =1} state = stop;
-   9          
-  10          void setInit();
-  11          void setTimer();
-  12          void setSerial();
-  13          void runStart();
-  14          void runOnce(enum SPEED speed);
-  15          
-  16          void main(){
-  17   1        int start_flag = 0;
-  18   1        setInit();
-  19   1        setSerial();
-  20   1        //setTimer();
-  21   1        while(1){
-  22   2          if (state == run){
-  23   3            if (start_flag == 0){
-  24   4              runStart();
-  25   4              start_flag++;
-  26   4            }
-  27   3            else{
-  28   4              runOnce(speed);
-  29   4            }
-  30   3          }
-  31   2          else{
-  32   3            start_flag = 0;
-  33   3            motor_in1 = 0;
-  34   3            motor_in2 = 0;
-  35   3          }
-  36   2        }
-  37   1      }
-  38          void controlSpeed() interrupt 0{
-  39   1        if (state == run){
-  40   2          speed = (speed+1)%3;
-  41   2        } 
-  42   1      }
-  43          void controlState() interrupt 2{
-  44   1        state = 1 - state;
-  45   1      }
-  46          void timer0() interrupt 1{
-  47   1        
-  48   1      }
-  49          void setInit(){
-  50   1        IT0 = 1;  //外部中断0下降沿触发
-  51   1        IT1 = 1;
-  52   1        EX0 = 1;  //外部中断0允许
-  53   1        EX1 = 1; 
-  54   1        EA = 1;   //总中断允许
-C51 COMPILER V9.57.0.0   TEST1                                                             09/27/2020 21:33:59 PAGE 2   
+   6          sbit display_data = P2^2;
+   7          sbit display_clk = P2^3;
+   8          enum SPEED{ low = 0, mid = 1, high = 2} speed = low;
+   9          enum STATE{ stop = 0, run =1} state = stop;
+  10          unsigned char number [] = {0xFC};
+  11          void setInit();
+  12          void setTimer();
+  13          void setSerial();
+  14          void runStart();
+  15          void runOnce(enum SPEED speed);
+  16          void updateDisplay();
+  17          void main(){
+  18   1        int start_flag = 0;
+  19   1        setInit();
+  20   1        setSerial();
+  21   1        //setTimer();
+  22   1        updateDisplay();
+  23   1        while(1){
+  24   2          if (state == run){
+  25   3            if (start_flag == 0){
+  26   4              runStart();
+  27   4              start_flag++;
+  28   4            }
+  29   3            else{
+  30   4              runOnce(speed);
+  31   4            }
+  32   3          }
+  33   2          else{
+  34   3            start_flag = 0;
+  35   3            motor_in1 = 0;
+  36   3            motor_in2 = 0;
+  37   3          }
+  38   2        }
+  39   1      }
+  40          void controlSpeed() interrupt 0{
+  41   1        unsigned char transferedData;
+  42   1        if (state == run){
+  43   2          speed = (speed+1)%3;
+  44   2          switch(speed){
+  45   3            case low: transferedData = 0x02;break;
+  46   3            case mid: transferedData = 0x03;break;
+  47   3            case high: transferedData = 0x04;break;
+  48   3          }
+  49   2          SBUF = transferedData;
+  50   2          while(!TI);
+  51   2          TI = 0;
+  52   2        }
+  53   1        
+  54   1      }
+C51 COMPILER V9.57.0.0   TEST1                                                             09/28/2020 12:17:47 PAGE 2   
 
-  55   1      }
-  56          void setTimer(){
-  57   1        TMOD = 0x01; //定时器控制方式
-  58   1        TH0 = 156; //定时器初值
-  59   1        TL0 = 156; 
-  60   1        ET0 = 1; //定时器0中断允许
-  61   1        TR0 = 1; //定时器开启
-  62   1      }
-  63          void runOnce(enum SPEED speed){
-  64   1        int num1 = 0;
-  65   1        int num2 = 10000;
-  66   1        switch(speed){
-  67   2          case low:
-  68   2              num1 = 3000;break;
-  69   2          case mid:
-  70   2              num1 = 6000;break;
-  71   2          case high:
-  72   2              num1 = 9000;break;
-  73   2        }
-  74   1        num2 = 10000 - num1;
-  75   1        motor_in1 = 0;
-  76   1        motor_in2 = 1;
-  77   1        while(num1--);
-  78   1        motor_in1 = 0;
-  79   1        motor_in2 = 0;
-  80   1        while(num2--);
-  81   1      }
-  82          void runStart(){
-  83   1        int num = 10000;
-  84   1        motor_in1 = 0;
-  85   1        motor_in2 = 1;
-  86   1        while(num--);
-  87   1      }
-  88          void setSerial(){
-  89   1        SCON = 0x50;
-  90   1        TMOD = 0x20;
-  91   1        PCON = 0x80;
-  92   1        TH1 = 0xFA;
-  93   1        TL1 = 0xFA;
-  94   1        ES = 1;
-  95   1        EA = 1;
-  96   1        TR1 = 1;
-  97   1      }
-  98          void serialInit() interrupt 4{
-  99   1        unsigned char receivedData;
- 100   1        receivedData = SBUF;
- 101   1        RI = 0;
- 102   1        switch (receivedData){
- 103   2          case 0x00: state = stop; break;
- 104   2          case 0x01: state = run; break;
- 105   2          case 0x02: speed = low; break;
- 106   2          case 0x03: speed = mid; break;
- 107   2          case 0x04: speed = high; break;
- 108   2        }
- 109   1        SBUF = receivedData;
- 110   1        while(!TI);
- 111   1        TI = 0;
- 112   1      
- 113   1      }
- 114            
- 115          
+  55          void controlState() interrupt 2{
+  56   1        unsigned char transferedData;
+  57   1        state = 1 - state;
+  58   1        switch(state){
+  59   2          case run: transferedData = 0x01;break;
+  60   2          case stop: transferedData = 0x00;break;
+  61   2        }
+  62   1        SBUF = transferedData;
+  63   1        while(!TI);
+  64   1        TI = 0;
+  65   1      }
+  66          void timer0() interrupt 1{
+  67   1        
+  68   1      }
+  69          void setInit(){
+  70   1        IT0 = 1;  //外部中断0下降沿触发
+  71   1        IT1 = 1;
+  72   1        EX0 = 1;  //外部中断0允许
+  73   1        EX1 = 1; 
+  74   1        EA = 1;   //总中断允许
+  75   1      }
+  76          void setTimer(){
+  77   1        TMOD = 0x01; //定时器控制方式
+  78   1        TH0 = 156; //定时器初值
+  79   1        TL0 = 156; 
+  80   1        ET0 = 1; //定时器0中断允许
+  81   1        TR0 = 1; //定时器开启
+  82   1      }
+  83          void runOnce(enum SPEED speed){
+  84   1        int num1 = 0;
+  85   1        int num2 = 10000;
+  86   1        switch(speed){
+  87   2          case low:
+  88   2              num1 = 3000;break;
+  89   2          case mid:
+  90   2              num1 = 6000;break;
+  91   2          case high:
+  92   2              num1 = 9000;break;
+  93   2        }
+  94   1        num2 = 10000 - num1;
+  95   1        motor_in1 = 0;
+  96   1        motor_in2 = 1;
+  97   1        while(num1--);
+  98   1        motor_in1 = 0;
+  99   1        motor_in2 = 0;
+ 100   1        while(num2--);
+ 101   1      }
+ 102          void runStart(){
+ 103   1        int num = 10000;
+ 104   1        motor_in1 = 0;
+ 105   1        motor_in2 = 1;
+ 106   1        while(num--);
+ 107   1      }
+ 108          void setSerial(){
+ 109   1        SCON = 0x50;
+ 110   1        TMOD = 0x20;
+ 111   1        PCON = 0x80;
+ 112   1        TH1 = 0xFA;
+ 113   1        TL1 = 0xFA;
+ 114   1        ES = 1;
+ 115   1        EA = 1;
+ 116   1        TR1 = 1;
+C51 COMPILER V9.57.0.0   TEST1                                                             09/28/2020 12:17:47 PAGE 3   
 
-C51 COMPILER V9.57.0.0   TEST1                                                             09/27/2020 21:33:59 PAGE 3   
+ 117   1      }
+ 118          void serialInit() interrupt 4{
+ 119   1        unsigned char receivedData;
+ 120   1        receivedData = SBUF;
+ 121   1        RI = 0;
+ 122   1        switch (receivedData){
+ 123   2          case 0x00: state = stop; break;
+ 124   2          case 0x01: state = run; break;
+ 125   2          case 0x02: speed = low; break;
+ 126   2          case 0x03: speed = mid; break;
+ 127   2          case 0x04: speed = high; break;
+ 128   2        }
+ 129   1        SBUF = receivedData;
+ 130   1        while(!TI);
+ 131   1        TI = 0;
+ 132   1      }
+ 133          void updateDisplay(){
+ 134   1        int i,j = 0;
+ 135   1        unsigned char display_number = number[0];
+ 136   1        display_clk = 0;
+ 137   1        display_data = 0;
+ 138   1        
+ 139   1        for(i = 0; i < 6; i++){
+ 140   2          switch(i){
+ 141   3            case 0: display_number = number[state];break;
+ 142   3            case 1: display_number = number[speed];break;
+ 143   3            default: display_number = number[0];
+ 144   3          }
+ 145   2          for(j = 0; j < 8; j++)
+ 146   2          {
+ 147   3            display_clk = 0;
+ 148   3            display_data = number[0]&1<<j;
+ 149   3            display_clk = 1;
+ 150   3          }
+ 151   2        }
+ 152   1      }
+ 153            
+ 154          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    329    ----
+   CODE SIZE        =    488    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      2       2
+   DATA SIZE        =      3       4
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

@@ -3,21 +3,23 @@
 
 sbit motor_in1 = P2^0;
 sbit motor_in2 = P2^1;
-sbit led = P2^4;
+sbit display_data = P2^2;
+sbit display_clk = P2^3;
 enum SPEED{ low = 0, mid = 1, high = 2} speed = low;
 enum STATE{ stop = 0, run =1} state = stop;
-
+unsigned char number [] = {0xFC};
 void setInit();
 void setTimer();
 void setSerial();
 void runStart();
 void runOnce(enum SPEED speed);
-
+void updateDisplay();
 void main(){
 	int start_flag = 0;
   setInit();
 	setSerial();
 	//setTimer();
+	updateDisplay();
 	while(1){
 		if (state == run){
 			if (start_flag == 0){
@@ -36,12 +38,30 @@ void main(){
 	}
 }
 void controlSpeed() interrupt 0{
+	unsigned char transferedData;
 	if (state == run){
 		speed = (speed+1)%3;
-	}	
+		switch(speed){
+			case low: transferedData = 0x02;break;
+			case mid: transferedData = 0x03;break;
+			case high: transferedData = 0x04;break;
+		}
+		SBUF = transferedData;
+		while(!TI);
+		TI = 0;
+	}
+	
 }
 void controlState() interrupt 2{
+	unsigned char transferedData;
 	state = 1 - state;
+	switch(state){
+		case run: transferedData = 0x01;break;
+		case stop: transferedData = 0x00;break;
+	}
+	SBUF = transferedData;
+	while(!TI);
+	TI = 0;
 }
 void timer0() interrupt 1{
 	
@@ -109,7 +129,26 @@ void serialInit() interrupt 4{
 	SBUF = receivedData;
 	while(!TI);
 	TI = 0;
-
+}
+void updateDisplay(){
+	int i,j = 0;
+	unsigned char display_number = number[0];
+	display_clk = 0;
+	display_data = 0;
+	
+	for(i = 0; i < 6; i++){
+		switch(i){
+			case 0: display_number = number[state];break;
+			case 1: display_number = number[speed];break;
+			default: display_number = number[0];
+		}
+		for(j = 0; j < 8; j++)
+		{
+			display_clk = 0;
+			display_data = number[0]&1<<j;
+			display_clk = 1;
+		}
+	}
 }
 	
 
