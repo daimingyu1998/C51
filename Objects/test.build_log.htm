@@ -25,13 +25,29 @@ Project File Date:  09/26/2020
 Rebuild target 'Target 1'
 assembling STARTUP.A51...
 compiling test1.c...
+test1.c(175): warning C275: expression with possibly no effect
+test1.c(179): warning C275: expression with possibly no effect
 linking...
-*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
-    SEGMENT: ?PR?SETTIMER?TEST1
-Program Size: data=16.0 xdata=0 code=738
+*** WARNING L15: MULTIPLE CALL TO SEGMENT
+    SEGMENT: ?PR?UPDATEDISPLAY?TEST1
+    CALLER1: ?C_C51STARTUP
+    CALLER2: ?PR?CONTROLSPEED?TEST1
+*** WARNING L15: MULTIPLE CALL TO SEGMENT
+    SEGMENT: ?PR?UPDATEDISPLAY?TEST1
+    CALLER1: ?PR?CONTROLSPEED?TEST1
+    CALLER2: ?PR?CONTROLSTATE?TEST1
+*** WARNING L15: MULTIPLE CALL TO SEGMENT
+    SEGMENT: ?PR?UPDATEDISPLAY?TEST1
+    CALLER1: ?PR?CONTROLSTATE?TEST1
+    CALLER2: ?PR?TIMER0?TEST1
+*** WARNING L15: MULTIPLE CALL TO SEGMENT
+    SEGMENT: ?PR?UPDATEDISPLAY?TEST1
+    CALLER1: ?PR?TIMER0?TEST1
+    CALLER2: ?PR?SERIALINIT?TEST1
+Program Size: data=57.3 xdata=0 code=1413
 creating hex file from ".\Objects\test"...
-".\Objects\test" - 0 Error(s), 1 Warning(s).
-Build Time Elapsed:  00:00:02
+".\Objects\test" - 0 Error(s), 6 Warning(s).
+Build Time Elapsed:  00:00:01
 </pre>
 </body>
 </html>
