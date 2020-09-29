@@ -8,11 +8,14 @@ sbit display_clk = P2^3;
 sbit state_button = P3^3;
 sbit speed_button = P3^2;
 sbit timer_button = P3^7;
+int temp_set = 26;
+int temp = 28;
 int mins = 1;
 int secs = 5;
 int times = 0;
-int secs_will_set = 0;
-int mins_will_set = 0;
+bit secs_will_set = 0;
+bit mins_will_set = 0;
+bit temp_will_set = 0;
 bit start_timer = 0;
 enum SPEED{ low = 0, mid = 1, high = 2} speed = low;
 enum STATE{ stop = 0, run =1} state = stop;
@@ -78,9 +81,9 @@ void controlSpeed() interrupt 0{
 		speed = (speed+1)%3;
 		updateDisplay();
 		switch(speed){
-			case low: transferedData = 0x02;break;
-			case mid: transferedData = 0x03;break;
-			case high: transferedData = 0x04;break;
+			case low: transferedData = 0x32;break;
+			case mid: transferedData = 0x33;break;
+			case high: transferedData = 0x34;break;
 		}
 		SBUF = transferedData;
 		while(!TI);
@@ -95,8 +98,8 @@ void controlState() interrupt 2{
 	state = 1 - state;
 	updateDisplay();
 	switch(state){
-		case run: transferedData = 0x01;break;
-		case stop: transferedData = 0x00;break;
+		case run: transferedData = 0x31;break;
+		case stop: transferedData = 0x30;break;
 	}
 	SBUF = transferedData;
 	while(!TI);
@@ -107,13 +110,28 @@ void timer0() interrupt 1{
 	if(times % 20 == 0){
 		mins = times / 1200;
 		secs = (times - mins*1200)/20;
+		if (temp - temp_set > 2){
+			speed = high;
+		}
+		else{ 
+			if(temp - temp_set > 1){
+				speed = mid;
+			}
+			else{
+				speed = low;
+			}
+		}
 		updateDisplay();
+		
 	}
 	if(times == 0){
 		state = stop;
 		updateDisplay();
 		start_timer = 0;
 		TR0 = 0;
+		SBUF = 0x30;
+		while(!TI);
+		TI = 0;
 		return;
 	}
 	TH0 = 0x4B; //¶¨Ê±Æ÷³õÖµ
@@ -183,15 +201,22 @@ void serialInit() interrupt 4{
 			secs_will_set = 0;
 		}
 		else{
-			switch (receivedData){
-				case 0x30: state = stop; break;
-				case 0x31: state = run; break;
-				case 0x32: speed = low; break;
-				case 0x33: speed = mid; break;
-				case 0x34: speed = high; break;
-				case 0x35: mins_will_set = 1;break;
-				case 0x36: secs_will_set = 1;break;
-				case 0x37: times = secs*20 + mins*1200;start_timer = 1;break;
+			if(temp_will_set == 1){
+				temp_set = receivedData - 48;
+				temp_will_set = 0;
+			}
+			else{
+				switch (receivedData){
+					case 0x30: state = stop; break;
+					case 0x31: state = run; break;
+					case 0x32: speed = low; break;
+					case 0x33: speed = mid; break;
+					case 0x34: speed = high; break;
+					case 0x35: mins_will_set = 1;break;
+					case 0x36: secs_will_set = 1;break;
+					case 0x37: times = secs*20 + mins*1200;start_timer = 1;break;
+					case 0x38: temp_will_set = 1;break;
+				}
 			}
 		}
 	}
